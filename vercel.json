@@ -1,12 +1,12 @@
 {
   "rewrites": [
     {
-      // 1. API Proxy (Must come first!)
+      
       "source": "/api/:match*",
       "destination": "http://13.214.176.196:8080/api/:match*"
     },
     {
-      // 2. SPA Fallback Route (The fix for your 404 error)
+     
       "source": "/(.*)",
       "destination": "/index.html"
     }
