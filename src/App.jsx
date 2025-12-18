@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "react-hot-toast"; // ✅ Import Toaster
+import { ToastContainer } from "react-toastify"; // ✅ Changed to React-Toastify
+import "react-toastify/dist/ReactToastify.css"; // ✅ Import CSS
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
@@ -16,27 +17,18 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <Router>
-      {/* ✅ Global Toaster Configuration */}
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: '#334155',
-            color: '#fff',
-          },
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
+      {/* ✅ Initialize ToastContainer for WebSocket Pop-ups */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
       />
 
       <Routes>

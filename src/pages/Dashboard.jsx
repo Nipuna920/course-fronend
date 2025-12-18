@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast"; // ✅ Import Toast
+import toast, { Toaster } from "react-hot-toast"; // ✅ Import Toaster
+import { motion } from "framer-motion";
 
 // Components
 import FileUpload from "../components/FileUpload.jsx";
@@ -9,6 +10,10 @@ import ContentList from "../components/ContentList.jsx";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import ProfileModal from "../components/ProfileModal.jsx";
+import ContentSkeleton from "../components/ContentSkeleton.jsx";
+
+// Hooks
+import { useDebounce } from "../hooks/useDebounce";
 
 // API
 import {
@@ -51,16 +56,19 @@ function Dashboard() {
     else root.classList.remove("dark");
   }, [darkMode]);
 
-  // Search & Sort
+  // --- SEARCH & SORT (Optimized) ---
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date_desc");
+
+  // Debounce Search: Wait 500ms before filtering
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
   const filteredContents = useMemo(() => {
     if (!data) return [];
     let items = [...data];
 
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
+    if (debouncedSearch.trim()) {
+      const term = debouncedSearch.toLowerCase();
       items = items.filter(
         (item) =>
           item.fileName?.toLowerCase().includes(term) ||
@@ -77,7 +85,7 @@ function Dashboard() {
     });
 
     return items;
-  }, [data, searchTerm, sortBy]);
+  }, [data, debouncedSearch, sortBy]);
 
   // Modals state
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
@@ -90,8 +98,13 @@ function Dashboard() {
 
   // --- HANDLERS ---
 
+  // Called when UploadModal finishes a successful upload
+  const handleUploadRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["my-contents"] });
+  };
+
   const handleDownload = async (item) => {
-    const toastId = toast.loading("Downloading..."); // ✅ Toast Loading
+    const toastId = toast.loading("Downloading...");
     try {
       const res = await downloadFile(item.id);
       const contentType = res.headers["content-type"] || item.fileType || "application/octet-stream";
@@ -104,30 +117,28 @@ function Dashboard() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      toast.success("Download started!", { id: toastId }); // ✅ Toast Success
+      toast.success("Download started!", { id: toastId });
     } catch (err) {
       console.error(err);
-      toast.error("Download failed", { id: toastId }); // ✅ Toast Error
+      toast.error("Download failed", { id: toastId });
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this file?")) return;
-    const toastId = toast.loading("Deleting content..."); // ✅ Toast Loading
+    const toastId = toast.loading("Deleting content...");
     try {
       await deleteContent(id);
-      // ✅ Invalidate 'my-contents' to remove the deleted item from the list
       await queryClient.invalidateQueries({ queryKey: ["my-contents"] });
-      toast.success("Content deleted successfully!", { id: toastId }); // ✅ Toast Success
+      toast.success("Content deleted successfully!", { id: toastId });
     } catch (err) {
       console.error(err);
-      toast.error("Failed to delete file. You may not be the owner.", { id: toastId }); // ✅ Toast Error
+      toast.error("Failed to delete file. You may not be the owner.", { id: toastId });
     }
   };
 
   const handleView = (item) => {
     try {
-      // Handle Link/YouTube
       if (item.fileType === "video/youtube" || item.fileType === "resource/link") {
         window.open(item.fileUrl, "_blank");
         return;
@@ -145,7 +156,7 @@ function Dashboard() {
       setPreviewOpen(true);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to open file"); // ✅ Toast Error
+      toast.error("Failed to open file");
     }
   };
 
@@ -168,11 +179,11 @@ function Dashboard() {
           summary: res.data.summary,
           keyPoints: res.data.keyPoints,
         });
-        toast.success("Summary generated!"); // ✅ Toast Success
+        toast.success("Summary generated!");
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load AI summary"); // ✅ Toast Error
+      toast.error("Failed to load AI summary");
       setSummaryModalOpen(false);
     } finally {
       setSummaryLoading(false);
@@ -182,7 +193,50 @@ function Dashboard() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-sky-50 dark:from-slate-900 dark:to-slate-800 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
 
-      {/* Header with Profile Trigger */}
+      {/* ✅ UPDATED TOASTER: Top-Center & Bigger */}
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          style: {
+            fontSize: '1.1rem',      // Bigger text
+            fontWeight: '600',       // Thicker font
+            padding: '16px 24px',    // More padding
+            minWidth: '320px',       // Wider container
+            borderRadius: '12px',    // Smooth corners
+            background: '#fff',      // White background
+            color: '#1e293b',        // Slate text
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          },
+          success: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#10b981',    // Emerald Green Icon
+              secondary: 'white',
+            },
+            style: {
+              borderLeft: '6px solid #10b981', // Green accent border
+            }
+          },
+          error: {
+            duration: 5000,
+            iconTheme: {
+              primary: '#ef4444',    // Red Icon
+              secondary: 'white',
+            },
+            style: {
+              borderLeft: '6px solid #ef4444', // Red accent border
+            }
+          },
+          loading: {
+             style: {
+                borderLeft: '6px solid #3b82f6', // Blue accent for loading
+             }
+          }
+        }}
+      />
+
+      {/* Header */}
       <Header
         darkMode={darkMode}
         setDarkMode={setDarkMode}
@@ -195,12 +249,17 @@ function Dashboard() {
         <div className="grid gap-8 lg:grid-cols-5">
           {/* Left: Upload */}
           <div className="lg:col-span-2">
-            {/* ✅ FIXED: Pass onUploadSuccess to refresh the list */}
-            <FileUpload onUploadSuccess={() => queryClient.invalidateQueries({ queryKey: ["my-contents"] })} />
+            {/* Pass refresh handler here */}
+            <FileUpload onUploadSuccess={handleUploadRefresh} />
           </div>
 
-          {/* Right: Content List (Card with shadow) */}
-          <div className="lg:col-span-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md rounded-2xl shadow-xl border border-white/20 dark:border-slate-800 p-6 flex flex-col h-full transition-all">
+          {/* Right: Content List */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="lg:col-span-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md rounded-2xl shadow-xl border border-white/20 dark:border-slate-800 p-6 flex flex-col h-full transition-all"
+          >
             <div className="flex flex-col gap-4 mb-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
@@ -232,11 +291,11 @@ function Dashboard() {
               </div>
             </div>
 
+            {/* Skeleton Loader */}
             {isLoading && (
-              <div className="flex items-center justify-center py-10">
-                <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
+              <ContentSkeleton cards={4} />
             )}
+
             {isError && <p className="text-sm text-red-500 text-center py-4">Error loading files</p>}
 
             {!isLoading && !isError && (
@@ -248,7 +307,7 @@ function Dashboard() {
                 onShowSummary={handleShowSummary}
               />
             )}
-          </div>
+          </motion.div>
         </div>
       </main>
 
@@ -260,12 +319,12 @@ function Dashboard() {
         userEmail={userEmail}
       />
 
-      {/* --- Existing Modals --- */}
+      {/* --- PREVIEW MODAL --- */}
       {previewOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-950 rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-lg font-semibold truncate pr-4">{previewFileName}</h3>
+              <h3 className="text-lg font-semibold truncate pr-4 text-slate-800 dark:text-white">{previewFileName}</h3>
               <button onClick={() => setPreviewOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold">✕</button>
             </div>
             <div className="flex-1 bg-slate-100 dark:bg-slate-900 p-2 overflow-auto flex justify-center">
@@ -278,6 +337,7 @@ function Dashboard() {
         </div>
       )}
 
+      {/* --- SUMMARY MODAL --- */}
       {summaryModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-950 rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[85vh] overflow-y-auto border border-white/10">
