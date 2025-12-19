@@ -1,12 +1,14 @@
 {
   "rewrites": [
     {
-      
       "source": "/api/:match*",
-      "destination": "http://13.214.176.196:8080/api/:match*"
+      "destination": "http://44.192.90.179:8080/api/:match*"
     },
     {
-     
+      "source": "/ws/:match*",
+      "destination": "http://44.192.90.179:8080/ws/:match*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -15,10 +17,7 @@
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin-allow-popups"
-        }
+        { "key": "Cross-Origin-Opener-Policy", "value": "unsafe-none" }
       ]
     }
   ]
