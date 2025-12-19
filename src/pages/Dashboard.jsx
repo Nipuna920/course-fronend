@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import toast, { Toaster } from "react-hot-toast"; // ✅ Import Toaster
-import { motion } from "framer-motion";
+import toast from "react-hot-toast";
+import { motion } from "framer-motion"; // ✨ Animation Library
 
 // Components
 import FileUpload from "../components/FileUpload.jsx";
@@ -10,10 +10,10 @@ import ContentList from "../components/ContentList.jsx";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import ProfileModal from "../components/ProfileModal.jsx";
-import ContentSkeleton from "../components/ContentSkeleton.jsx";
+import ContentSkeleton from "../components/ContentSkeleton.jsx"; // ✨ Skeleton Loader
 
 // Hooks
-import { useDebounce } from "../hooks/useDebounce";
+import { useDebounce } from "../hooks/useDebounce"; // ✨ Performance Hook
 
 // API
 import {
@@ -60,13 +60,14 @@ function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date_desc");
 
-  // Debounce Search: Wait 500ms before filtering
+  // ✨ 1. Debounce Search: Wait 500ms before filtering
   const debouncedSearch = useDebounce(searchTerm, 500);
 
   const filteredContents = useMemo(() => {
     if (!data) return [];
     let items = [...data];
 
+    // ✨ Use 'debouncedSearch' instead of 'searchTerm'
     if (debouncedSearch.trim()) {
       const term = debouncedSearch.toLowerCase();
       items = items.filter(
@@ -85,7 +86,7 @@ function Dashboard() {
     });
 
     return items;
-  }, [data, debouncedSearch, sortBy]);
+  }, [data, debouncedSearch, sortBy]); // 👈 Dependency updated
 
   // Modals state
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
@@ -97,11 +98,6 @@ function Dashboard() {
   const [previewFileName, setPreviewFileName] = useState("");
 
   // --- HANDLERS ---
-
-  // Called when UploadModal finishes a successful upload
-  const handleUploadRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["my-contents"] });
-  };
 
   const handleDownload = async (item) => {
     const toastId = toast.loading("Downloading...");
@@ -193,49 +189,6 @@ function Dashboard() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-sky-50 dark:from-slate-900 dark:to-slate-800 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
 
-      {/* ✅ UPDATED TOASTER: Top-Center & Bigger */}
-      <Toaster
-        position="top-center"
-        reverseOrder={false}
-        toastOptions={{
-          style: {
-            fontSize: '1.1rem',      // Bigger text
-            fontWeight: '600',       // Thicker font
-            padding: '16px 24px',    // More padding
-            minWidth: '320px',       // Wider container
-            borderRadius: '12px',    // Smooth corners
-            background: '#fff',      // White background
-            color: '#1e293b',        // Slate text
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-          },
-          success: {
-            duration: 4000,
-            iconTheme: {
-              primary: '#10b981',    // Emerald Green Icon
-              secondary: 'white',
-            },
-            style: {
-              borderLeft: '6px solid #10b981', // Green accent border
-            }
-          },
-          error: {
-            duration: 5000,
-            iconTheme: {
-              primary: '#ef4444',    // Red Icon
-              secondary: 'white',
-            },
-            style: {
-              borderLeft: '6px solid #ef4444', // Red accent border
-            }
-          },
-          loading: {
-             style: {
-                borderLeft: '6px solid #3b82f6', // Blue accent for loading
-             }
-          }
-        }}
-      />
-
       {/* Header */}
       <Header
         darkMode={darkMode}
@@ -249,8 +202,7 @@ function Dashboard() {
         <div className="grid gap-8 lg:grid-cols-5">
           {/* Left: Upload */}
           <div className="lg:col-span-2">
-            {/* Pass refresh handler here */}
-            <FileUpload onUploadSuccess={handleUploadRefresh} />
+            <FileUpload onUploadSuccess={() => queryClient.invalidateQueries({ queryKey: ["my-contents"] })} />
           </div>
 
           {/* Right: Content List */}
@@ -291,7 +243,7 @@ function Dashboard() {
               </div>
             </div>
 
-            {/* Skeleton Loader */}
+            {/* ✨ 2. Skeleton Loader State */}
             {isLoading && (
               <ContentSkeleton cards={4} />
             )}
